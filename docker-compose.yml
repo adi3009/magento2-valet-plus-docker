@@ -1,0 +1,72 @@
+version: "3.7"
+services:
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: randompassword
+    networks:
+      - m24net
+    volumes:
+      - m24_mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+    restart: always
+    networks:
+      - m24net
+    ports:
+      - 8090:80
+    volumes:
+      - m24_php_my_admin_data:/sessions   
+  redis:
+    image: redis:5
+    command: [ "redis-server" ]
+    hostname: redis
+    networks:
+      - m24net
+    volumes:
+      - m24_redis_data:/data
+    ports:
+      - 6379:6379  
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.0
+    container_name: elasticsearch
+    environment:
+      - cluster.name=es-docker-cluster      
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - m24_esdata1:/usr/share/elasticsearch/data      
+    ports:
+      - 9200:9200
+    networks:
+      - m24net
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.9.0
+    container_name: kibana
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    networks:
+      - m24net
+networks:
+  m24net:
+volumes:
+  m24_mysql_data:
+  m24_esdata1:
+    driver: local
+  m24_redis_data:
+  m24_php_my_admin_data:
